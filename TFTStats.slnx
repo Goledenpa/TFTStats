@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="TFTStats.Core/TFTStats.Core.csproj" />
+  <Project Path="TFTStats.Presentation/TFTStats.Presentation.csproj" />
+</Solution>
