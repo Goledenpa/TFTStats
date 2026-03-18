@@ -307,9 +307,9 @@ namespace TFTStats.Core.Infrastructure.Importers
                             await writer.StartRowAsync(ct);
                             await writer.WriteAsync(p.Id, Varchar, ct);
                             await writer.WriteAsync(traitId, Integer, ct);
-                            await writer.WriteAsync(t.NumUnits, Integer, ct);
-                            await writer.WriteAsync(t.TierCurrent, Integer, ct);
-                            await writer.WriteAsync(t.TierTotal, Integer, ct);
+                            await writer.WriteAsync((short)t.NumUnits, Smallint, ct);
+                            await writer.WriteAsync((short)t.TierCurrent, Smallint, ct);
+                            await writer.WriteAsync((short)t.TierTotal, Smallint, ct);
 
                             current++;
                             ReportProgress("Traits", current, totalRows);
