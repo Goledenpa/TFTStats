@@ -6,7 +6,7 @@ namespace TFTStats.Core.Entities
     [Table("participant")]
     public class Participant
     {
-        [Key, Column("id")] public int Id { get; set; }
+        [Key, Column("id")] public string Id { get; set; } = null!;
         [Column("match_id")] public string MatchId { get; set; } = null!;
         [Column("puuid")] public string Puuid { get; set; } = null!;
         [Column("placement")] public int Placement { get; set; }
@@ -18,6 +18,9 @@ namespace TFTStats.Core.Entities
         [Column("total_damage_to_players")] public int TotalDamageToPlayers{ get; set; }
         [Column("companion_species")] public string? CompanionSpecies{ get; set; }
         [Column("companion_skin_id")] public int CompanionSkinId{ get; set; }
+
+        public string RiotGameName { get; set; } = null!;
+        public string RiotTagLine { get; set; } = null!;
 
 
         public List<ParticipantUnit> Units { get; set; } = [];

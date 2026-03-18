@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Json;
+﻿using Microsoft.Extensions.Logging;
+using System.Net.Http.Json;
 using TFTStats.Core.Infrastructure;
 using TFTStats.Core.Models;
 
@@ -6,11 +7,13 @@ namespace TFTStats.Core.Service
 {
     public class RiotTFTSummonerService
     {
+        private readonly ILogger<RiotTFTSummonerService> _logger;
         private readonly RiotApiClient _apiClient;
 
-        public RiotTFTSummonerService(RiotApiClient apiClient)
+        public RiotTFTSummonerService(RiotApiClient apiClient, ILogger<RiotTFTSummonerService> logger)
         {
             _apiClient = apiClient;
+            _logger = logger;
         }
 
         public async Task<RiotTFTSummoner?> GetSummonerByPuuidAsync(string region, string puuid)

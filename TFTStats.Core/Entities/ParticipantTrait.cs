@@ -7,8 +7,8 @@ namespace TFTStats.Core.Entities
     public class ParticipantTrait
     {
         [Key, Column("id")] public int Id { get; set; }
-        [Column("participant_id")] public int ParticipantId { get; set; }
-        [Column("trait_name")] public string? TraitName { get; set; }
+        [Column("participant_id")] public string ParticipantId { get; set; } = null!;
+        [Column("trait_name")] public string TraitName { get; set; } = null!;
         [Column("num_units")] public int NumUnits { get; set; }
         [Column("tier_current")] public int TierCurrent{ get; set; }
         [Column("tier_total")] public int TierTotal{ get; set; }

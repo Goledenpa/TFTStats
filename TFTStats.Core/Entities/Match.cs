@@ -12,7 +12,8 @@ namespace TFTStats.Core.Entities
         [Column("game_length")] public float GameLength { get; set; }
         [Column("game_version")] public string? GameVersion { get; set; }
         [Column("set_number")] public int SetNumber { get; set; }
+        [Column("queue_id")] public int QueueId { get; set; }
 
-        public List<Participant> Participants { get; set; } = new();
+        public List<Participant> Participants { get; set; } = [];
     }
 }
