@@ -34,7 +34,7 @@ jobs:
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         source: "./publish/*"
-        target: "/home/${{ secrets.REMOTE_USER }}/tft-crawler"
+        target: "/home/${{ secrets.REMOTE_USER }}/tftCrawler"
         strip_components: 1
 
     - name: Restart Crawler Service
@@ -45,8 +45,8 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           # Make the binary executable
-          chmod +x /home/${{ secrets.REMOTE_USER }}/tft-crawler/TFTStats.Presentation
+          chmod +x /home/${{ secrets.REMOTE_USER }}/tftCrawler/TFTStats.Presentation
           # Reload and restart the background service
           sudo systemctl daemon-reload
-          sudo systemctl restart tft-crawler
-          sudo systemctl status tft-crawler --no-pager
+          sudo systemctl restart tftCrawler
+          sudo systemctl status tftCrawler --no-pager
