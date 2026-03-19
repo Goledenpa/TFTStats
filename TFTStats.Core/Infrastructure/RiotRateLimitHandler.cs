@@ -28,7 +28,8 @@ namespace TFTStats.Core.Infrastructure
             {
                 var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
 
-                _logger.LogWarning("Riot API Rate Limit hit. Warning {seconds}s... ", retryAfter.TotalSeconds);
+                _logger.LogWarning("Riot API Rate Limit hit. Resuming in {seconds}s [{time}]... ", retryAfter.TotalSeconds, 
+                    DateTime.UtcNow.AddSeconds(retryAfter.TotalSeconds).ToLocalTime().ToString("HH:mm:ss"));
 
                 await ExecuteVisualCountdown(retryAfter, ct);
 
