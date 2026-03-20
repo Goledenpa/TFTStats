@@ -12,18 +12,23 @@ namespace TFTStats.Presentation
         private readonly IMatchRepository _matchRepo;
         private readonly IRiotDataImporter _importer;
         private readonly ILogger<Crawler> _logger;
+        private readonly ITFTPatchRepository _patchRepository;
 
-        public Crawler(RiotTFTMatchService matchService, IMatchRepository matchRepo, IRiotDataImporter importer, ILogger<Crawler> logger)
+        public Crawler(RiotTFTMatchService matchService, IMatchRepository matchRepo, IRiotDataImporter importer, ILogger<Crawler> logger, ITFTPatchRepository tftPatchRepository)
         {
             _matchService = matchService;
             _matchRepo = matchRepo;
             _importer = importer;
             _logger = logger;
+            _patchRepository = tftPatchRepository;
         }
 
         public async Task RunAsync(string cluster, int targetSet, CancellationToken ct)
         {
-            long set16Start = 1764633600L;
+            DateTime longTime = (await _patchRepository.GetLastPatch(targetSet)).StartDate;
+            DateTime startSetTime = (await _patchRepository.GetFirstPatch(targetSet)).StartDate;
+            long longTimeStart = ((DateTimeOffset)longTime).ToUnixTimeSeconds();
+            long longStartSetTime = ((DateTimeOffset)startSetTime).ToUnixTimeSeconds();
             long currentQueryStartTime;
 
             _logger.LogInformation("[Crawler] Starting crawl on cluster: {cluster}", cluster);
@@ -47,7 +52,7 @@ namespace TFTStats.Presentation
                     }
                     else
                     {
-                        currentQueryStartTime = set16Start;
+                        currentQueryStartTime = longTimeStart;
                     }
 
                     var startTimeAsOffset = DateTimeOffset.FromUnixTimeSeconds(currentQueryStartTime);
@@ -56,7 +61,7 @@ namespace TFTStats.Presentation
 
                     string searchRangeInfo;
 
-                    if(currentQueryStartTime == set16Start)
+                    if(currentQueryStartTime == longStartSetTime)
                     {
                         searchRangeInfo = $"Start of Set ({localStart:MMM dd, yyyy HH:mm})";
                     }

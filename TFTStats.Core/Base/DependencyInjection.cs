@@ -49,6 +49,7 @@ namespace TFTStats.Core.Base
             });
 
             services.AddTransient<IMatchRepository, MatchRepository>();
+            services.AddTransient<ITFTPatchRepository, TFTPatchRepository>();
 
             return services;
         }
