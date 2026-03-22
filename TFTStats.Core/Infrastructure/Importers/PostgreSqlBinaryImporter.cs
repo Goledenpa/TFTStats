@@ -153,21 +153,17 @@ namespace TFTStats.Core.Infrastructure.Importers
                 // 1. Get unique players
                 await UpsertPlayersFromBatch(conn, batch, ct);
 
-                // 5. Match Table
+                // 2. match Table
                 await CopyMatches(conn, batch, ct);
-                Console.Write(" [Match OK]");
 
-                // 6. Participant Table
+                // 3. participant Table
                 await CopyParticipants(conn, batch, ct);
-                Console.Write(" [Participants] OK]");
 
-                // 7. participant_unit table
+                // 4. participant_unit table
                 await CopyUnits(conn, batch, ct);
-                Console.Write(" [Units OK]");
 
-                // 8. participant_trait
+                // 5. participant_trait table
                 await CopyTraits(conn, batch, ct);
-                Console.WriteLine(" [Traits OK]");
 
                 await transaction.CommitAsync(ct);
 
@@ -312,7 +308,7 @@ namespace TFTStats.Core.Infrastructure.Importers
                             await writer.WriteAsync((short)t.TierTotal, Smallint, ct);
 
                             current++;
-                            ReportProgress("Traits", current, totalRows);
+                            ReportProgress("Traits", current, totalRows, ConsoleColor.Magenta);
                         }
                         else
                         {
@@ -355,7 +351,7 @@ namespace TFTStats.Core.Infrastructure.Importers
                             await writer.WriteAsync(itemIds, NpgsqlDbType.Array | Integer, ct);
 
                             current++;
-                            ReportProgress("Units", current, totalRows);
+                            ReportProgress("Units", current, totalRows, ConsoleColor.Green);
                         }
                         else
                         {
@@ -398,7 +394,7 @@ namespace TFTStats.Core.Infrastructure.Importers
                     await writer.WriteAsync(p.CompanionSkinId, Integer, ct);
 
                     current++;
-                    ReportProgress("Participants", current, totalRows);
+                    ReportProgress("Participants", current, totalRows, ConsoleColor.Yellow);
                 }
             }
 
@@ -423,7 +419,7 @@ namespace TFTStats.Core.Infrastructure.Importers
                 await writer.WriteAsync(m.GameVersion, Varchar, ct);
                 await writer.WriteAsync(m.SetNumber, Integer, ct);
                 count++;
-                ReportProgress("Matches", count, batch.Count);
+                ReportProgress("Matches", count, batch.Count, ConsoleColor.Cyan);
             }
             await writer.CompleteAsync(ct);
         }
@@ -479,17 +475,21 @@ namespace TFTStats.Core.Infrastructure.Importers
             }
         }
 
-        private void ReportProgress(string table, int current, int total)
+        private void ReportProgress(string table, int current, int total, ConsoleColor color)
         {
-            // Only update the console if we are at a multiple of 50 or finished
-            // This saves CPU on your Oracle instance
             if (current % 50 == 0 || current == total)
             {
-                // Calculate percentage for a nice visual
                 double percent = total > 0 ? (current / (double)total) * 100 : 0;
 
-                // \r keeps it on one line. The spaces at the end clear old text.
-                Console.Write($"\r[DB Ingestion] {table,-12} | {current,5} / {total,-5} | {percent,3:F0}% completed...                      ");
+                Console.ForegroundColor = color;
+
+                Console.Write($"\r[Ingestion] {table,-12} | {current,5} / {total,-5} | {percent,3:F0}% completed...      ");
+                Console.ResetColor();
+
+                if (current == total)
+                {
+                    Console.WriteLine(" [OK]");
+                }
             }
         }
     }
