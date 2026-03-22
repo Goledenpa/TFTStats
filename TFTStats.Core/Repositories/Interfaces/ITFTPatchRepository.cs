@@ -6,5 +6,6 @@ namespace TFTStats.Core.Repositories.Interfaces
     {
         Task<TFTPatch> GetFirstPatch(int set);
         Task<TFTPatch> GetLastPatch(int set);
+        Task<TFTPatch?> GetPatch(string name);
     }
 }

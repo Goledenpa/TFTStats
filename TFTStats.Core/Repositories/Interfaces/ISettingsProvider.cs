@@ -1,8 +1,9 @@
 ﻿namespace TFTStats.Core.Repositories.Interfaces
 {
-    public interface IApiKeyProvider
+    public interface ISettingsProvider
     {
         Task<string> GetApiKeyAsync();
+        Task<string> GetTargetPatchAsync();
         void InvalidateCache();
     }
 }

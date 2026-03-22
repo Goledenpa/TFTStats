@@ -4,14 +4,16 @@ using TFTStats.Core.Repositories.Interfaces;
 
 namespace TFTStats.Core.Repositories
 {
-    public class DbApiKeyProvider : IApiKeyProvider
+    public class DbSettingsProvider : ISettingsProvider
     {
-        private readonly ILogger<DbApiKeyProvider> _logger;
+        private readonly ILogger<DbSettingsProvider> _logger;
         private readonly SqlExecutor _sqlExecutor;
+        
         private string? _cachedKey;
         private DateTime _expiryTime;
+        private string? _cachedPatch;
 
-        public DbApiKeyProvider(SqlExecutor sqlExecutor, ILogger<DbApiKeyProvider> logger)
+        public DbSettingsProvider(SqlExecutor sqlExecutor, ILogger<DbSettingsProvider> logger)
         {
             _sqlExecutor = sqlExecutor;
             _logger = logger;
@@ -24,9 +26,18 @@ namespace TFTStats.Core.Repositories
                 return _cachedKey;
             }
 
-            await RefreshFromDbAsync();
+            await RefreshApiKeyAsync();
 
             return _cachedKey ?? string.Empty;
+        }
+
+        public async Task<string> GetTargetPatchAsync()
+        {
+            const string query = "SELECT value FROM app_settings WHERE key = 'crawler_target_patch'";
+
+            _cachedPatch = await _sqlExecutor.QueryScalarAsync<string>(query) ?? "16.1";
+
+            return _cachedPatch;
         }
 
         public void InvalidateCache()
@@ -34,19 +45,19 @@ namespace TFTStats.Core.Repositories
             _expiryTime = DateTime.MinValue;
         }
 
-        private async Task RefreshFromDbAsync()
+        private async Task RefreshApiKeyAsync()
         {
             const string query = "SELECT value, last_updated_at FROM app_settings WHERE key = 'riot_api_key'";
 
             var res = await _sqlExecutor.QueryFirstOrDefaultAsync(query, r => new
             {
-                Key = r.GetString(0),
+                Value = r.GetString(0),
                 UpdatedAt = r.GetDateTime(1)
             });
 
             if (res is not null)
             {
-                _cachedKey = res.Key;
+                _cachedKey = res.Value;
                 _expiryTime = res.UpdatedAt.AddHours(23.5);
 
                 _logger.LogInformation("API Key Refresh from DB. Expires at {expireTime}", _expiryTime.ToLocalTime());

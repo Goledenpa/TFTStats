@@ -50,5 +50,26 @@ namespace TFTStats.Core.Repositories
                 };
             })!;
         }
+
+        public Task<TFTPatch?> GetPatch(string name)
+        {
+            const string query = "SELECT id, set_number, patch_name, start_date, end_date FROM tft_patch WHERE patch_name = @patchName";
+
+            return _sqlExecutor.QueryFirstOrDefaultAsync(query, r =>
+            {
+                return new TFTPatch
+                {
+                    Id = r.GetInt32(0),
+                    SetNumber = r.GetInt32(1),
+                    PatchName = r.GetString(2),
+                    StartDate = r.GetDateTime(3),
+                    EndDate = r.GetDateTime(4),
+                };
+            }, 
+            p =>
+            {
+                p.Add(_sqlExecutor.CreateParameter("patchName", name));
+            });
+        }
     }
 }
