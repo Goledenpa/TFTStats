@@ -15,7 +15,10 @@ namespace TFTStats.Presentation
                 .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
                 .MinimumLevel.Override("System.Net.Http", Serilog.Events.LogEventLevel.Warning)
                 .Enrich.FromLogContext()
-                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .WriteTo.Console(
+                    outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+                    theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code,
+                    applyThemeToRedirectedOutput: true)
                 .WriteTo.File("logs/crawler-.txt",
                     rollingInterval: RollingInterval.Day,
                     retainedFileCountLimit: 7,

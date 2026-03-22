@@ -489,7 +489,7 @@ namespace TFTStats.Core.Infrastructure.Importers
                 double percent = total > 0 ? (current / (double)total) * 100 : 0;
 
                 // \r keeps it on one line. The spaces at the end clear old text.
-                Console.Write($"\r[DB Ingestion] {table,-12} | {current,5} / {total,-5} | {percent,3:F0}% completed...      ");
+                Console.Write($"\r[DB Ingestion] {table,-12} | {current,5} / {total,-5} | {percent,3:F0}% completed...                      ");
             }
         }
     }
