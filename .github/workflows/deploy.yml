@@ -10,12 +10,12 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '6.0.x' # Or '10.0' if using a preview, though C# 10 uses .NET 6
+        dotnet-version: '10.0' # Or '10.0' if using a preview, though C# 10 uses .NET 6
 
     - name: Publish App
       # We build a 'Self-Contained' binary so you don't have to install .NET on Oracle
