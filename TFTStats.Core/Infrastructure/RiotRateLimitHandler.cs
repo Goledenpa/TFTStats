@@ -63,7 +63,7 @@ namespace TFTStats.Core.Infrastructure
                     await Task.Delay(1000, ct);
                 }
 
-                Console.WriteLine("\r[Rate Limit] Resuming ingestion...                    ");
+                Console.WriteLine($"\r{"[Rate Limit] Resuming ingestion...",-60}");
             }
             catch (OperationCanceledException)
             {
