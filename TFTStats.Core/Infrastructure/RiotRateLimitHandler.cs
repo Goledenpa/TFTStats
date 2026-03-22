@@ -6,10 +6,10 @@ namespace TFTStats.Core.Infrastructure
 {
     public class RiotRateLimitHandler : DelegatingHandler
     {
-        private readonly IApiKeyProvider _keyProvider;
+        private readonly ISettingsProvider _keyProvider;
         private readonly ILogger<RiotRateLimitHandler> _logger;
 
-        public RiotRateLimitHandler(IApiKeyProvider keyProvider, ILogger<RiotRateLimitHandler> logger)
+        public RiotRateLimitHandler(ISettingsProvider keyProvider, ILogger<RiotRateLimitHandler> logger)
         {
             _keyProvider = keyProvider;
             _logger = logger;

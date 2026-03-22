@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
-
-namespace TFTStats.Core.Entities
+﻿namespace TFTStats.Core.Entities
 {
     public record UnitKey(string CharacterId, int Tier, int Rarity);
 

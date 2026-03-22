@@ -1,11 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using TFTStats.Core.Base;
-using TFTStats.Core.Infrastructure.Importers.Interfaces;
-using TFTStats.Core.Repositories.Interfaces;
-using TFTStats.Core.Service;
 using Serilog;
+using TFTStats.Core.Base;
 
 namespace TFTStats.Presentation
 {
@@ -32,7 +29,8 @@ namespace TFTStats.Presentation
                     .UseSerilog()
                     .ConfigureServices((context, services) =>
                     {
-                        string connectionString = "Host=79.72.28.58;Database=TFTStats;Username=postgres;Password=!Adv31295.-9;Include Error Detail=true;";
+                        string connectionString = context.Configuration.GetConnectionString("TftDatabase")
+                            ?? throw new InvalidOperationException("Connection string 'TftDatabase' not found.");
 
                         services.AddCoreServices(connectionString);
                         services.AddTransient<Crawler>();

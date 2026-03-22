@@ -16,27 +16,49 @@ namespace TFTStats.Presentation
         private readonly RiotTFTMatchService _matchService;
         private readonly IMatchRepository _matchRepo;
         private readonly IRiotDataImporter _importer;
-        private readonly ILogger<Crawler> _logger;
         private readonly ITFTPatchRepository _patchRepository;
+        private readonly ISettingsProvider _settingsProvider;
+        private readonly ILogger<Crawler> _logger;
 
-        public Crawler(RiotTFTMatchService matchService, IMatchRepository matchRepo, IRiotDataImporter importer, ILogger<Crawler> logger, ITFTPatchRepository tftPatchRepository)
+        public Crawler(RiotTFTMatchService matchService, IMatchRepository matchRepo, IRiotDataImporter importer, ILogger<Crawler> logger, ITFTPatchRepository tftPatchRepository, ISettingsProvider settingsProvider)
         {
             _matchService = matchService;
             _matchRepo = matchRepo;
             _importer = importer;
             _logger = logger;
             _patchRepository = tftPatchRepository;
+            _settingsProvider = settingsProvider;
         }
 
         public async Task RunAsync(string cluster, int targetSet, CancellationToken ct)
         {
-            var setTimeRange = await GetSetTimeRangeAsync(targetSet);
+            var activePatch = await _patchRepository.GetFirstPatch(targetSet);
+            var activePatchName = activePatch.PatchName;
+            long activePatchEpoch = 0;
+
             _logger.LogInformation("[Crawler] Starting crawl on cluster: {cluster}", cluster);
 
             while (!ct.IsCancellationRequested)
             {
                 try
                 {
+                    var targetPatch = await _settingsProvider.GetTargetPatchAsync();
+                    if (targetPatch != activePatchName)
+                    {
+                        activePatchName = targetPatch;
+                        activePatch = await _patchRepository.GetPatch(activePatchName);
+
+                        if (activePatch is null)
+                        {
+                            _logger.LogError("[Crawler] The requested patch to crawl does not exist");
+                            break;
+                        }
+
+                        activePatchEpoch = ((DateTimeOffset)activePatch.StartDate).ToUnixTimeSeconds();
+                        _logger.LogInformation("[Crawler] Target updated to {patch}. Time Floor: {date}",
+                            activePatchName, DateTimeOffset.FromUnixTimeSeconds(activePatchEpoch).ToLocalTime());
+                    }
+
                     var (puuid, lastCrawledAt) = await _matchRepo.GetNextPlayerToCrawlAsync();
 
                     if (string.IsNullOrEmpty(puuid))
@@ -46,7 +68,7 @@ namespace TFTStats.Presentation
                         continue;
                     }
 
-                    await CrawlPlayerAsync(cluster, targetSet, puuid, lastCrawledAt, setTimeRange, ct);
+                    await CrawlPlayerAsync(cluster, targetSet, puuid, lastCrawledAt, activePatch!, ct);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
@@ -66,23 +88,28 @@ namespace TFTStats.Presentation
             }
         }
 
-        private async Task<SetTimeRange> GetSetTimeRangeAsync(int targetSet)
+        private async Task CrawlPlayerAsync(string cluster, int targetSet, string puuid, DateTime? lastCrawledAt, TFTPatch activePatch, CancellationToken ct)
         {
-            var lastPatch = await _patchRepository.GetLastPatch(targetSet);
-            //var firstPatch = await _patchRepository.GetFirstPatch(targetSet);
-            
-            return new SetTimeRange(lastPatch);
-        }
+            long patchStartEpoch = ((DateTimeOffset)activePatch.StartDate).ToUnixTimeSeconds();
+            long queryStartTime;
 
-        private async Task CrawlPlayerAsync(string cluster, int targetSet, string puuid, DateTime? lastCrawledAt, SetTimeRange setTimeRange, CancellationToken ct)
-        {
-            long queryStartTime = lastCrawledAt.HasValue
-                ? new DateTimeOffset(lastCrawledAt.Value).ToUnixTimeSeconds() - hourInSeconds
-                : setTimeRange.PatchStartTime;
+            if (lastCrawledAt.HasValue)
+            {
+                queryStartTime = new DateTimeOffset(lastCrawledAt.Value).ToUnixTimeSeconds() - hourInSeconds;
+            }
+            else
+            {
+                queryStartTime = patchStartEpoch;
+            }
+
+            if (queryStartTime < patchStartEpoch)
+            {
+                queryStartTime = patchStartEpoch;
+            }
 
             _logger.LogInformation("[Crawler] Target Found: {puuid}", puuid);
 
-            LogSearchRange(queryStartTime, setTimeRange.PatchEndTime);
+            LogSearchRange(queryStartTime, new DateTimeOffset(activePatch.EndDate!.Value).ToUnixTimeSeconds());
 
             var allIds = await _matchService.GetSetMatchIdsAsync(cluster, puuid, queryStartTime, ct);
             var uniqueIds = allIds.Distinct().ToList();
@@ -140,9 +167,9 @@ namespace TFTStats.Presentation
             var entityStream = dtoStream
                 .Where(x => x.Info.TftSetNumber == targetSet)
                 .Select(x => x.ToEntity())
-                .Where(x => x.Participants.Count != 0);
+                .Where(x => x.Participants.Count > 0);
 
-            await _importer.ImportMatchStremAsync(entityStream, ct);
+            await _importer.ImportMatchStreamAsync(entityStream, ct);
         }
     }
 }

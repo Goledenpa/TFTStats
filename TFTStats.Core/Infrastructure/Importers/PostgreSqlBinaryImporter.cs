@@ -27,7 +27,7 @@ namespace TFTStats.Core.Infrastructure.Importers
             _logger = logger;
         }
 
-        public async Task ImportMatchStremAsync(IAsyncEnumerable<Match> matchStream, CancellationToken ct = default)
+        public async Task ImportMatchStreamAsync(IAsyncEnumerable<Match> matchStream, CancellationToken ct = default)
         {
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync(ct);

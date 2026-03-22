@@ -30,7 +30,7 @@ namespace TFTStats.Core.Base
                 return new SqlExecutor(connectionString, factory);
             });
 
-            services.AddTransient<IApiKeyProvider, DbApiKeyProvider>();
+            services.AddTransient<ISettingsProvider, DbSettingsProvider>();
 
             services.AddHttpClient<RiotApiClient>(c =>
             {
