@@ -28,7 +28,7 @@ namespace TFTStats.Core.Infrastructure
             {
                 var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
 
-                _logger.LogWarning("Riot API Rate Limit hit. Resuming in {seconds}s [{time}]... ", retryAfter.TotalSeconds, 
+                _logger.LogWarning("Riot API Rate Limit hit. Resuming in {seconds}s [{time}]... ", retryAfter.TotalSeconds,
                     DateTime.UtcNow.AddSeconds(retryAfter.TotalSeconds).ToLocalTime().ToString("HH:mm:ss"));
 
                 await ExecuteVisualCountdown(retryAfter, ct);
@@ -73,23 +73,65 @@ namespace TFTStats.Core.Infrastructure
         }
         private async Task WaitForNewKey(string oldKey, CancellationToken ct)
         {
+            string currentAttempKey = oldKey;
+
             while (true)
             {
+                _keyProvider.InvalidateCache();
                 string newKey = await _keyProvider.GetApiKeyAsync();
 
                 if (newKey != oldKey && !string.IsNullOrWhiteSpace(newKey))
                 {
+                    currentAttempKey = newKey;
+                    _logger.LogInformation("New API Key detected in DB. Entering progapation validation...");
                     break;
                 }
 
                 _logger.LogTrace("Still waiting for a new API Key in the database...");
-
                 Console.Write($"\r[System] Parked: Waiting for new key... ({DateTime.Now:HH:mm:ss})  ");
 
                 await Task.Delay(TimeSpan.FromSeconds(30), ct);
             }
+
+            int attempt = 1;
+            while (true)
+            {
+                _logger.LogInformation("Validating new Key, (Attempt {attempt})...", attempt);
+
+                if (await IsKeyGloballyActive(currentAttempKey, ct))
+                {
+                    _logger.LogInformation("Validation successful!");
+                    break;
+                }
+
+                _logger.LogWarning("Key returned 403 (Propagation is in progress). Waiting 30s...");
+
+                for (int i = 30; i > 0; i--)
+                {
+                    Console.WriteLine($"\r[System] Riot Propagation: {i}s remaining...");
+                    await Task.Delay(1000, ct);
+                }
+                attempt++;
+            }
             Console.WriteLine();
         }
 
+        private async Task<bool> IsKeyGloballyActive(string key, CancellationToken ct)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, "https://euw1.api.riotgames.com/tft/status/v1/platform-data");
+                request.Headers.Add("X-Riot-Token", key);
+
+                var res = await base.SendAsync(request, ct);
+
+                return res.StatusCode != HttpStatusCode.Forbidden &&
+                       res.StatusCode != HttpStatusCode.Unauthorized;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }
