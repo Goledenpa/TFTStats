@@ -168,6 +168,9 @@ namespace TFTStats.Core.Infrastructure.Importers
                 await transaction.CommitAsync(ct);
 
                 _logger.LogInformation("Batch Success: {Count} matches ingested into all tables.", batch.Count);
+
+                var memoryMb = GC.GetTotalMemory(false) / 1_000_000;
+                _logger.LogInformation("[Memory] Managed head: {memoryMb} MB", memoryMb);
             }
             catch (Exception ex)
             {
