@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="riot.txt" />
+  </Folder>
   <Project Path="TFTStats.Core/TFTStats.Core.csproj" />
   <Project Path="TFTStats.Presentation/TFTStats.Presentation.csproj" />
 </Solution>
