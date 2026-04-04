@@ -43,6 +43,13 @@ namespace TFTStats.Core.Repositories
             return res is null ? 0 : Convert.ToInt32(res);
         }
 
+        public async Task<int> GetRemainingPlayerCountAsync()
+        {
+            const string query = "SELECT COUNT(*) FROM player WHERE last_harvested_at IS NULL";
+            var res = await _sqlExecutor.QueryScalarAsync<object>(query);
+            return res == null ? 0 : Convert.ToInt32(res);
+        }
+
         public async Task MarkPlayerAsHarvestedAsync(string puuid)
         {
             const string query = "UPDATE player SET last_harvested_at = CURRENT_TIMESTAMP WHERE puuid = @puuid";

@@ -146,5 +146,38 @@ namespace TFTStats.Tests.Core.Repositories
             Assert.Contains("crawled_at IS NULL", capturedSql);
             Assert.Equal(42, result);
         }
+
+        [Fact]
+        public async Task GetRemainingPlayerCountAsync_ReturnsCorrectCount()
+        {
+            // Arrange
+            _sqlExecutorMock
+                .Setup(x => x.QueryScalarAsync<object>(It.IsAny<string>(), It.IsAny<Action<DbParameterCollection>>()))
+                .ReturnsAsync(42L);
+
+            // Act
+            var result = await _repository.GetRemainingPlayerCountAsync();
+
+            // Assert
+            Assert.Equal(42, result);
+        }
+
+        [Fact]
+        public async Task GetRemainingPlayerCountAsync_UsesCorrectSqlQuery()
+        {
+            // Arrange
+            string? capturedSql = null;
+            _sqlExecutorMock
+                .Setup(x => x.QueryScalarAsync<object>(It.IsAny<string>(), It.IsAny<Action<DbParameterCollection>>()))
+                .Callback((string sql, Action<DbParameterCollection> _) => capturedSql = sql)
+                .ReturnsAsync(0L);
+
+            // Act
+            await _repository.GetRemainingPlayerCountAsync();
+
+            // Assert
+            Assert.NotNull(capturedSql);
+            Assert.Equal("SELECT COUNT(*) FROM player WHERE last_harvested_at IS NULL", capturedSql);
+        }
     }
 }

@@ -8,5 +8,6 @@ namespace TFTStats.Core.Repositories.Interfaces
         Task UpsertMatchIdsAsync(string puuid, List<MatchHarvestInfo> matchIds);
         Task MarkPlayerAsHarvestedAsync(string puuid);
         Task<int> GetPendingMatchCountAsync();
+        Task<int> GetRemainingPlayerCountAsync();
     }
 }

@@ -10,6 +10,7 @@ namespace TFTStats.Presentation
         private readonly int _harvestCheckDelayMs;
         private readonly int _errorRetryDelayMs;
         private readonly bool _exitWhenIdle;
+        private int _totalPlayers;
 
         private readonly RiotTFTMatchService _matchService;
         private readonly ITFTPatchRepository _patchRepo;
@@ -39,6 +40,8 @@ namespace TFTStats.Presentation
             _logger.LogInformation("[Harvester] Starting harvest loop on cluster: {cluster}", cluster);
 
             long setStartTime = 0;
+            _totalPlayers = await _harvestRepo.GetRemainingPlayerCountAsync();
+            _logger.LogInformation("[Harvester] Initial remaining players: {totalPlayers}", _totalPlayers);
 
             while (!ct.IsCancellationRequested)
             {
@@ -113,8 +116,11 @@ namespace TFTStats.Presentation
             await _harvestRepo.UpsertMatchIdsAsync(puuid, harvestedMatches);
             await _harvestRepo.MarkPlayerAsHarvestedAsync(puuid);
 
+            var remaining = await _harvestRepo.GetRemainingPlayerCountAsync();
             var pendingCount = await _harvestRepo.GetPendingMatchCountAsync();
-            _logger.LogInformation("[Harvester] Player {puuid} finished. Pending matches in queue: {pendingCount} (+ {newMatches})", puuid, pendingCount, harvestedMatches.Count);
+            double pct = _totalPlayers > 0 ? Math.Round((1.0 - (double)remaining / _totalPlayers) * 100, 1) : 0;
+            _logger.LogInformation("[Harvester] Player {puuid} finished. Remaining: {remaining} ({pct}%) | Pending matches: {pendingCount} (+ {newMatches})",
+                puuid, remaining, pct, pendingCount, harvestedMatches.Count);
         }
     }
 }

@@ -27,6 +27,12 @@ namespace TFTStats.Tests.Presentation
             _patchRepoMock = new Mock<ITFTPatchRepository>();
             _harvestRepoMock = new Mock<IHarvesterRepository>();
             _loggerMock = new Mock<ILogger<Harvester>>();
+
+            // Default mocks
+            _harvestRepoMock.Setup(x => x.GetRemainingPlayerCountAsync())
+                .ReturnsAsync(1000);
+            _harvestRepoMock.Setup(x => x.GetPendingMatchCountAsync())
+                .ReturnsAsync(0);
         }
 
         private Harvester CreateHarvester(int delayMs = 0, bool exitWhenIdle = false) => new(
@@ -56,6 +62,11 @@ namespace TFTStats.Tests.Presentation
 
             _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", puuid, It.IsAny<long>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<string> { "match-1", "match-2" });
+
+            _harvestRepoMock.Setup(x => x.GetRemainingPlayerCountAsync())
+                .ReturnsAsync(99);
+            _harvestRepoMock.Setup(x => x.GetPendingMatchCountAsync())
+                .ReturnsAsync(5);
 
             var cts = new CancellationTokenSource();
             _harvestRepoMock.Setup(x => x.MarkPlayerAsHarvestedAsync(puuid))
