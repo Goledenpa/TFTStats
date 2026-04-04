@@ -26,7 +26,7 @@ namespace TFTStats.Presentation
             .CreateLogger();
             try
             {
-                Log.Information("Starting TFT Stats Crawler System (Set 16)");
+                Log.Information("Starting TFT Stats Two-Phase Crawler System (Set 16)");
 
                 using IHost host = Host.CreateDefaultBuilder(args)
                     .UseSerilog()
@@ -37,6 +37,7 @@ namespace TFTStats.Presentation
 
                         services.AddCoreServices(connectionString);
                         services.AddTransient<Crawler>();
+                        services.AddTransient<Harvester>();
                     })
                     .Build();
 
@@ -47,19 +48,44 @@ namespace TFTStats.Presentation
                     Log.Warning("Shutdown requested. Finishing current batch and closing safely...");
                     cts.Cancel();
                 };
+                
+                // Phase 1: Harvest all match IDs first (exits when no more players)
+                var harvester = ActivatorUtilities.CreateInstance<Harvester>(
+                    host.Services, 10000, 5000, true);
                 var crawler = host.Services.GetRequiredService<Crawler>();
 
-                // Config for March 2026
                 string cluster = "europe";
                 int setNumber = 16;
 
+                Log.Information("=== PHASE 1: HARVESTING MATCH IDs ===");
                 try
                 {
-                    await crawler.RunAsync(cluster, setNumber, cts.Token);
+                    await harvester.RunAsync(cluster, setNumber, cts.Token);
                 }
                 catch (OperationCanceledException)
                 {
-                    Log.Information("Crawler stopped gracefully via user cancellation.");
+                    Log.Information("Harvester stopped gracefully.");
+                }
+                catch (Exception ex)
+                {
+                    Log.Fatal(ex, "Harvester crashed due to an unhandled exception");
+                }
+
+                if (cts.IsCancellationRequested)
+                {
+                    Log.Information("Shutdown requested. Skipping Phase 2.");
+                    return;
+                }
+
+                // Phase 2: Crawl and import match details
+                Log.Information("=== PHASE 2: CRAWLING MATCH DETAILS ===");
+                try
+                {
+                    await crawler.RunAsync(cluster, cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    Log.Information("Crawler stopped gracefully.");
                 }
                 catch (Exception ex)
                 {
