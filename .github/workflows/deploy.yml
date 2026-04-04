@@ -2,7 +2,7 @@ name: Deploy TFT Crawler to Oracle Cloud
 
 on:
   push:
-    branches: [ master ] # Trigger on every commit to main
+    branches: [ TwoPhase ] # Trigger on every commit to TwoPhase
 
 jobs:
   build-and-deploy:

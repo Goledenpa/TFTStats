@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".github/workflows/deploy.yml" />
+  </Folder>
   <Project Path="TFTStats.Core/TFTStats.Core.csproj" />
   <Project Path="TFTStats.Presentation/TFTStats.Presentation.csproj" />
+  <Project Path="TFTStats.Tests/TFTStats.Tests.csproj" />
 </Solution>
