@@ -7,9 +7,9 @@ namespace TFTStats.Core.Repositories
     public class MatchRepository : IMatchRepository
     {
         private readonly ILogger<MatchRepository> _logger;
-        private readonly SqlExecutor _sqlExecutor;
+        private readonly ISqlExecutor _sqlExecutor;
 
-        public MatchRepository(SqlExecutor sqlExec, ILogger<MatchRepository> logger)
+        public MatchRepository(ISqlExecutor sqlExec, ILogger<MatchRepository> logger)
         {
             _sqlExecutor = sqlExec;
             _logger = logger;
@@ -28,7 +28,6 @@ namespace TFTStats.Core.Repositories
                 {
                     p.Add(_sqlExecutor.CreateParameter("ids", matchIds.ToArray()));
                 });
-
 
             return [.. matchIds.Except(existingInDb)];
         }
@@ -64,9 +63,39 @@ namespace TFTStats.Core.Repositories
         {
             const string query = "SELECT COUNT(*) FROM player";
 
-            // We use object and Convert because some DBs return long for COUNT(*)
             var result = await _sqlExecutor.QueryScalarAsync<object>(query);
             return Convert.ToInt32(result);
+        }
+
+        public async Task<List<string>> GetNextPendingMatchIdsAsync(int count)
+        {
+            const string query = @"
+                SELECT match_id
+                FROM staging_match_ids
+                WHERE crawled_at IS NULL
+                ORDER BY game_datetime DESC
+                LIMIT @count";
+
+            return await _sqlExecutor.QueryAsync(
+                query,
+                r => r.GetString(0),
+                p => p.Add(_sqlExecutor.CreateParameter("count", count))
+            );
+        }
+
+        public async Task MarkMatchesAsCrawledAsync(List<string> matchIds)
+        {
+            if (matchIds.Count == 0) return;
+
+            const string query = @"
+                UPDATE staging_match_ids 
+                SET crawled_at = CURRENT_TIMESTAMP 
+                WHERE match_id = ANY(@ids::text[])";
+
+            await _sqlExecutor.ExecuteAsync(query, p =>
+            {
+                p.Add(_sqlExecutor.CreateParameter("ids", matchIds.ToArray()));
+            });
         }
     }
 }

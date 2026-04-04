@@ -17,7 +17,7 @@ namespace TFTStats.Core.Service
             _logger = logger;
         }
 
-        public async Task<List<string>> GetMatches(string region, string puuid, int start = 0, int count = 20)
+        public virtual async Task<List<string>> GetMatches(string region, string puuid, int start = 0, int count = 20)
         {
             var url = _apiClient.BuildUrl(region, $"tft/match/v1/matches/by-puuid/{puuid}/ids?start={start}&count={count}");
             var res = await _apiClient.Client.GetAsync(url);
@@ -30,7 +30,7 @@ namespace TFTStats.Core.Service
             return [];
         }
 
-        public async Task<RiotTFTMatch?> GetMatch(string region, string matchId, CancellationToken ct = default)
+        public virtual async Task<RiotTFTMatch?> GetMatch(string region, string matchId, CancellationToken ct = default)
         {
 
             var url = _apiClient.BuildUrl(region, $"tft/match/v1/matches/{matchId}");
@@ -75,7 +75,7 @@ namespace TFTStats.Core.Service
                 }
             }
         }
-        public async Task<List<string>> GetSetMatchIdsAsync(string cluster, string puuid, long setStartTime, CancellationToken ct = default)
+        public virtual async Task<List<string>> GetSetMatchIdsAsync(string cluster, string puuid, long setStartTime, CancellationToken ct = default)
         {
             var allIds = new List<string>();
             int startOffset = 0;

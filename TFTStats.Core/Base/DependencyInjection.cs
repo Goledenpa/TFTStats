@@ -29,6 +29,7 @@ namespace TFTStats.Core.Base
                 var factory = sp.GetRequiredService<DbProviderFactory>();
                 return new SqlExecutor(connectionString, factory);
             });
+            services.AddSingleton<ISqlExecutor>(sp => sp.GetRequiredService<SqlExecutor>());
 
             services.AddTransient<ISettingsProvider, DbSettingsProvider>();
 
@@ -50,6 +51,7 @@ namespace TFTStats.Core.Base
 
             services.AddTransient<IMatchRepository, MatchRepository>();
             services.AddTransient<ITFTPatchRepository, TFTPatchRepository>();
+            services.AddTransient<IHarvesterRepository, HarvesterRepository>();
 
             return services;
         }

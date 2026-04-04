@@ -3,7 +3,7 @@ using System.Data.Common;
 
 namespace TFTStats.Core.Infrastructure
 {
-    public class SqlExecutor
+    public class SqlExecutor : ISqlExecutor
     {
         private readonly string _connectionString;
         private readonly DbProviderFactory _factory;
