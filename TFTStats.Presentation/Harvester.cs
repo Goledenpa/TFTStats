@@ -118,7 +118,7 @@ namespace TFTStats.Presentation
 
             var remaining = await _harvestRepo.GetRemainingPlayerCountAsync();
             var pendingCount = await _harvestRepo.GetPendingMatchCountAsync();
-            double pct = _totalPlayers > 0 ? Math.Round((1.0 - (double)remaining / _totalPlayers) * 100, 1) : 0;
+            double pct = _totalPlayers > 0 ? Math.Round((1.0 - (double)remaining / _totalPlayers) * 100, 4) : 0;
             _logger.LogInformation("[Harvester] Player {puuid} finished. Remaining: {remaining} ({pct}%) | Pending matches: {pendingCount} (+ {newMatches})",
                 puuid, remaining, pct, pendingCount, harvestedMatches.Count);
         }
