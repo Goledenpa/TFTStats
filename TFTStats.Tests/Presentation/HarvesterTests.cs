@@ -15,6 +15,7 @@ namespace TFTStats.Tests.Presentation
         private readonly Mock<RiotTFTMatchService> _matchServiceMock;
         private readonly Mock<ITFTPatchRepository> _patchRepoMock;
         private readonly Mock<IHarvesterRepository> _harvestRepoMock;
+        private readonly Mock<IMatchRepository> _matchRepoMock;
         private readonly Mock<ILogger<Harvester>> _loggerMock;
 
         private static readonly DateTime s_patchStart = new(2025, 1, 15, 0, 0, 0, DateTimeKind.Utc);
@@ -37,6 +38,7 @@ namespace TFTStats.Tests.Presentation
                 Mock.Of<ILogger<RiotTFTMatchService>>()) { CallBase = false };
             _patchRepoMock = new Mock<ITFTPatchRepository>();
             _harvestRepoMock = new Mock<IHarvesterRepository>();
+            _matchRepoMock = new Mock<IMatchRepository>();
             _loggerMock = new Mock<ILogger<Harvester>>();
 
             // Default mocks
@@ -44,6 +46,8 @@ namespace TFTStats.Tests.Presentation
                 .ReturnsAsync(1000);
             _harvestRepoMock.Setup(x => x.GetPendingMatchCountAsync())
                 .ReturnsAsync(0);
+            _matchRepoMock.Setup(x => x.GetTotalPlayerCountAsync())
+                .ReturnsAsync(1000);
 
             SetupDefaultPatches();
         }
@@ -52,6 +56,7 @@ namespace TFTStats.Tests.Presentation
             _matchServiceMock.Object,
             _patchRepoMock.Object,
             _harvestRepoMock.Object,
+            _matchRepoMock.Object,
             _loggerMock.Object,
             harvestCheckDelayMs: delayMs,
             errorRetryDelayMs: delayMs,

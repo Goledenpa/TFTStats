@@ -16,12 +16,14 @@ namespace TFTStats.Presentation
         private readonly RiotTFTMatchService _matchService;
         private readonly ITFTPatchRepository _patchRepo;
         private readonly IHarvesterRepository _harvestRepo;
+        private readonly IMatchRepository _matchRepo;
         private readonly ILogger<Harvester> _logger;
 
         public Harvester(
             RiotTFTMatchService matchService,
             ITFTPatchRepository patchRepo,
             IHarvesterRepository harvestRepo,
+            IMatchRepository matchRepo,
             ILogger<Harvester> logger,
             int harvestCheckDelayMs = 10000,
             int errorRetryDelayMs = 5000,
@@ -30,6 +32,7 @@ namespace TFTStats.Presentation
             _matchService = matchService;
             _patchRepo = patchRepo;
             _harvestRepo = harvestRepo;
+            _matchRepo = matchRepo;
             _logger = logger;
             _harvestCheckDelayMs = harvestCheckDelayMs;
             _errorRetryDelayMs = errorRetryDelayMs;
@@ -41,8 +44,8 @@ namespace TFTStats.Presentation
             _logger.LogInformation("[Harvester] Starting harvest loop on cluster: {cluster}", cluster);
 
             List<TFTPatch> patches = [];
-            _totalPlayers = await _harvestRepo.GetRemainingPlayerCountAsync();
-            _logger.LogInformation("[Harvester] Initial remaining players: {totalPlayers}", _totalPlayers);
+            _totalPlayers = await _matchRepo.GetTotalPlayerCountAsync();
+            _logger.LogInformation("[Harvester] Total players in database: {totalPlayers}", _totalPlayers);
 
             while (!ct.IsCancellationRequested)
             {
