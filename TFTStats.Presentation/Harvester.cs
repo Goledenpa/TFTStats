@@ -157,11 +157,11 @@ namespace TFTStats.Presentation
 
             if (patchResults.Count > 0)
             {
-                var summary = string.Join(" | ", patchResults.Select(p =>
-                    $"{p.PatchName}: {p.MatchIdsFound} found, {p.NewMatchIdsAdded} new"));
+                var summary = string.Join("\r\n", patchResults.Select(p =>
+                    $"  {p.PatchName}: {p.MatchIdsFound} found, {p.NewMatchIdsAdded} new"));
                 _logger.LogInformation("[Harvester] Player {puuid} harvest complete.\r\n" +
                     "Total match IDs collected: {totalIds}\r\n" +
-                    "Per-patch breakdown: {summary}",
+                    "Per-patch breakdown:\r\n{summary}",
                     puuid, totalMatchIds, summary);
             }
 
