@@ -5,5 +5,6 @@
         long GameCreation,
         DateTime? GameDateTime,
         int? SetNumber,
-        int? QueueId);
+        int? QueueId,
+        int? PatchId);
 } 

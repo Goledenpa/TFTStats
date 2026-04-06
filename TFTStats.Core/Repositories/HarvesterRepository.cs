@@ -65,14 +65,15 @@ namespace TFTStats.Core.Repositories
             if (matchIds.Count == 0) return;
 
             const string query = @"
-                INSERT INTO staging_match_ids(match_id, puuid, game_creation, game_datetime, set_number, queue_id)
+                INSERT INTO staging_match_ids(match_id, puuid, game_creation, game_datetime, set_number, queue_id, patch_id)
                 SELECT
                     unnest(@matchIds::text[]),
                     @puuid,
                     unnest(@gameCreations::bigint[]),
                     unnest(@gameDatetimes::timestamptz[]),
                     unnest(@setNumbers::int[]),
-                    unnest(@queueIds::int[])
+                    unnest(@queueIds::int[]),
+                    unnest(@patchIds::int[])
                 ON CONFLICT (match_id, puuid) DO NOTHING";
 
             await _sqlExecutor.ExecuteAsync(query, p =>
@@ -83,6 +84,7 @@ namespace TFTStats.Core.Repositories
                 p.Add(_sqlExecutor.CreateParameter("gameDatetimes", matchIds.Select(x => x.GameDateTime).ToArray()));
                 p.Add(_sqlExecutor.CreateParameter("setNumbers", matchIds.Select(x => x.SetNumber).ToArray()));
                 p.Add(_sqlExecutor.CreateParameter("queueIds", matchIds.Select(x => x.QueueId).ToArray()));
+                p.Add(_sqlExecutor.CreateParameter("patchIds", matchIds.Select(x => x.PatchId).ToArray()));
             });
         }
     }

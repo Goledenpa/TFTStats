@@ -65,8 +65,8 @@ namespace TFTStats.Tests.Core.Repositories
 
             var matches = new List<MatchHarvestInfo>
             {
-                new("match-1", 0, null, 16, null),
-                new("match-2", 0, null, 16, null)
+                new("match-1", 0, null, 16, null, 1),
+                new("match-2", 0, null, 16, null, 1)
             };
 
             // Act
@@ -75,6 +75,7 @@ namespace TFTStats.Tests.Core.Repositories
             // Assert
             Assert.NotNull(capturedSql);
             Assert.Contains("INSERT INTO staging_match_ids", capturedSql);
+            Assert.Contains("patch_id", capturedSql);
             Assert.Contains("unnest", capturedSql);
             Assert.Contains("ON CONFLICT", capturedSql);
             Assert.Contains("DO NOTHING", capturedSql);

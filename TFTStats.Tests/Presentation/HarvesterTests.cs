@@ -19,6 +19,17 @@ namespace TFTStats.Tests.Presentation
 
         private static readonly DateTime s_patchStart = new(2025, 1, 15, 0, 0, 0, DateTimeKind.Utc);
 
+        private static readonly List<TFTPatch> s_defaultPatches = new()
+        {
+            new TFTPatch { StartDate = s_patchStart, SetNumber = 16, PatchName = "16.1" }
+        };
+
+        private void SetupDefaultPatches()
+        {
+            _patchRepoMock.Setup(x => x.GetPatchesBySetAsync(16))
+                .ReturnsAsync(s_defaultPatches);
+        }
+
         public HarvesterTests()
         {
             _matchServiceMock = new Mock<RiotTFTMatchService>(
@@ -33,6 +44,8 @@ namespace TFTStats.Tests.Presentation
                 .ReturnsAsync(1000);
             _harvestRepoMock.Setup(x => x.GetPendingMatchCountAsync())
                 .ReturnsAsync(0);
+
+            SetupDefaultPatches();
         }
 
         private Harvester CreateHarvester(int delayMs = 0, bool exitWhenIdle = false) => new(
@@ -49,8 +62,6 @@ namespace TFTStats.Tests.Presentation
         {
             // Arrange
             var puuid = "player-abc-123";
-            _patchRepoMock.Setup(x => x.GetFirstPatch(16))
-                .ReturnsAsync(new TFTPatch { StartDate = s_patchStart, SetNumber = 16, PatchName = "16.1" });
 
             var callSequence = new Queue<PlayerHarvestInfo>(new[]
             {
@@ -87,9 +98,6 @@ namespace TFTStats.Tests.Presentation
         public async Task RunAsync_ZeroMatches_SkipsUpsert_MarksHarvested()
         {
             // Arrange
-            _patchRepoMock.Setup(x => x.GetFirstPatch(16))
-                .ReturnsAsync(new TFTPatch { StartDate = s_patchStart, SetNumber = 16, PatchName = "16.1" });
-
             var callSequence = new Queue<PlayerHarvestInfo>(new[]
             {
                 new PlayerHarvestInfo("p1", null),
@@ -119,9 +127,6 @@ namespace TFTStats.Tests.Presentation
         public async Task RunAsync_ErrorRecovers_ThenContinues()
         {
             // Arrange
-            _patchRepoMock.Setup(x => x.GetFirstPatch(16))
-                .ReturnsAsync(new TFTPatch { StartDate = s_patchStart, SetNumber = 16, PatchName = "16.1" });
-
             var callSequence = new Queue<PlayerHarvestInfo>(new[]
             {
                 new PlayerHarvestInfo("p1", null),
@@ -152,9 +157,6 @@ namespace TFTStats.Tests.Presentation
         public async Task RunAsync_NoPendingPlayers_WaitsAndChecksAgain()
         {
             // Arrange
-            _patchRepoMock.Setup(x => x.GetFirstPatch(16))
-                .ReturnsAsync(new TFTPatch { StartDate = s_patchStart, SetNumber = 16, PatchName = "16.1" });
-
             var callSequence = new Queue<PlayerHarvestInfo>(new[]
             {
                 new PlayerHarvestInfo("", null),
@@ -182,9 +184,6 @@ namespace TFTStats.Tests.Presentation
         public async Task RunAsync_Cancellation_ExitsGracefully()
         {
             // Arrange
-            _patchRepoMock.Setup(x => x.GetFirstPatch(16))
-                .ReturnsAsync(new TFTPatch { StartDate = s_patchStart, SetNumber = 16, PatchName = "16.1" });
-
             _harvestRepoMock.Setup(x => x.GetNextPlayerToHarvestAsync())
                 .ReturnsAsync(new PlayerHarvestInfo("", null));
 
@@ -204,12 +203,12 @@ namespace TFTStats.Tests.Presentation
         }
 
         [Fact]
-        public async Task RunAsync_GetFirstPatchThrows_ErrorIsCaughtAndRetried()
+        public async Task RunAsync_GetPatchesThrows_ErrorIsCaughtAndRetried()
         {
-            // Arrange - GetFirstPatch throws once, then succeeds
-            _patchRepoMock.SetupSequence(x => x.GetFirstPatch(16))
+            // Arrange - GetPatchesBySetAsync throws once, then succeeds
+            _patchRepoMock.SetupSequence(x => x.GetPatchesBySetAsync(16))
                 .ThrowsAsync(new Exception("Patch API down"))
-                .ReturnsAsync(new TFTPatch { StartDate = s_patchStart, SetNumber = 16, PatchName = "16.1" });
+                .ReturnsAsync(s_defaultPatches);
 
             _harvestRepoMock.Setup(x => x.GetNextPlayerToHarvestAsync())
                 .ReturnsAsync(new PlayerHarvestInfo("", null));
@@ -221,7 +220,7 @@ namespace TFTStats.Tests.Presentation
             await CreateHarvester(delayMs: 1).RunAsync("europe", 16, cts.Token);
 
             // Assert - recovered and continued
-            _patchRepoMock.Verify(x => x.GetFirstPatch(16), Times.AtLeast(2));
+            _patchRepoMock.Verify(x => x.GetPatchesBySetAsync(16), Times.AtLeast(2));
         }
 
         [Fact]
@@ -229,8 +228,6 @@ namespace TFTStats.Tests.Presentation
         {
             // Arrange
             var puuid = "p1";
-            _patchRepoMock.Setup(x => x.GetFirstPatch(16))
-                .ReturnsAsync(new TFTPatch { StartDate = s_patchStart, SetNumber = 16, PatchName = "16.1" });
 
             _harvestRepoMock.SetupSequence(x => x.GetNextPlayerToHarvestAsync())
                 .ReturnsAsync(new PlayerHarvestInfo(puuid, null))
@@ -257,8 +254,6 @@ namespace TFTStats.Tests.Presentation
         public async Task RunAsync_GetSetMatchIdsThrows_PlayerNotMarkedHarvested()
         {
             // Arrange
-            _patchRepoMock.Setup(x => x.GetFirstPatch(16))
-                .ReturnsAsync(new TFTPatch { StartDate = s_patchStart, SetNumber = 16, PatchName = "16.1" });
 
             _harvestRepoMock.SetupSequence(x => x.GetNextPlayerToHarvestAsync())
                 .ReturnsAsync(new PlayerHarvestInfo("p1", null))
@@ -283,9 +278,6 @@ namespace TFTStats.Tests.Presentation
         public async Task RunAsync_ExitWhenIdle_ExitsImmediatelyWhenNoPlayers()
         {
             // Arrange
-            _patchRepoMock.Setup(x => x.GetFirstPatch(16))
-                .ReturnsAsync(new TFTPatch { StartDate = s_patchStart, SetNumber = 16, PatchName = "16.1" });
-
             _harvestRepoMock.Setup(x => x.GetNextPlayerToHarvestAsync())
                 .ReturnsAsync(new PlayerHarvestInfo("", null));
 
@@ -302,8 +294,6 @@ namespace TFTStats.Tests.Presentation
         {
             // Arrange
             var puuid = "p1";
-            _patchRepoMock.Setup(x => x.GetFirstPatch(16))
-                .ReturnsAsync(new TFTPatch { StartDate = s_patchStart, SetNumber = 16, PatchName = "16.1" });
 
             _harvestRepoMock.SetupSequence(x => x.GetNextPlayerToHarvestAsync())
                 .ReturnsAsync(new PlayerHarvestInfo(puuid, null))

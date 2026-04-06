@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using TFTStats.Core.Entities;
 using TFTStats.Core.Entities.Harvester;
 using TFTStats.Core.Repositories.Interfaces;
 using TFTStats.Core.Service;
@@ -39,7 +40,7 @@ namespace TFTStats.Presentation
         {
             _logger.LogInformation("[Harvester] Starting harvest loop on cluster: {cluster}", cluster);
 
-            long setStartTime = 0;
+            List<TFTPatch> patches = [];
             _totalPlayers = await _harvestRepo.GetRemainingPlayerCountAsync();
             _logger.LogInformation("[Harvester] Initial remaining players: {totalPlayers}", _totalPlayers);
 
@@ -47,11 +48,22 @@ namespace TFTStats.Presentation
             {
                 try
                 {
-                    if (setStartTime == 0)
+                    if (patches.Count == 0)
                     {
-                        var activePatch = await _patchRepo.GetFirstPatch(targetSet);
-                        setStartTime = ((DateTimeOffset)activePatch.StartDate).ToUnixTimeSeconds();
+                        patches = (await _patchRepo.GetPatchesBySetAsync(targetSet)).ToList();
+                        if (patches.Count == 0)
+                        {
+                            _logger.LogError("[Harvester] No patches found for set {setNumber}. Aborting.", targetSet);
+                            return;
+                        }
+                        _logger.LogInformation("[Harvester] Found {patchCount} patches for set {setNumber}", patches.Count, targetSet);
+                        foreach (var patch in patches)
+                        {
+                            _logger.LogInformation("[Harvester] Patch: {patchName} ({startDate} - {endDate})",
+                                patch.PatchName, patch.StartDate, patch.EndDate);
+                        }
                     }
+
                     var playerInfo = await _harvestRepo.GetNextPlayerToHarvestAsync();
 
                     if (string.IsNullOrEmpty(playerInfo.Puuid))
@@ -69,7 +81,7 @@ namespace TFTStats.Presentation
 
                     _logger.LogInformation("[Harvester] Harvesting player: {puuid}", playerInfo.Puuid);
 
-                    await HarvestPlayerAsync(cluster, targetSet, setStartTime, playerInfo.Puuid, ct);
+                    await HarvestPlayerAsync(cluster, targetSet, patches, playerInfo.Puuid, ct);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
@@ -92,35 +104,75 @@ namespace TFTStats.Presentation
             }
         }
 
-        private async Task HarvestPlayerAsync(string cluster, int targetSet, long setStartTime, string puuid, CancellationToken ct)
+        private async Task HarvestPlayerAsync(string cluster, int targetSet, List<TFTPatch> patches, string puuid, CancellationToken ct)
         {
-            var matchIds = await _matchService.GetSetMatchIdsAsync(cluster, puuid, setStartTime, ct);
+            var patchResults = new List<PatchHarvestResult>();
+            int totalMatchIds = 0;
 
-            if (matchIds.Count == 0)
+            foreach (var patch in patches)
             {
-                _logger.LogInformation("[Harvester] Player {puuid} has 0 matches for set {setNumber}", puuid, targetSet);
-                await _harvestRepo.MarkPlayerAsHarvestedAsync(puuid);
-                return;
+                if (ct.IsCancellationRequested) return;
+
+                var patchStartTime = ((DateTimeOffset)patch.StartDate).ToUnixTimeSeconds();
+
+                try
+                {
+                    var matchIds = await _matchService.GetSetMatchIdsAsync(cluster, puuid, patchStartTime, ct);
+
+                    if (matchIds.Count == 0)
+                    {
+                        _logger.LogDebug("[Harvester] Patch {patchName}: 0 matches for {puuid}", patch.PatchName, puuid);
+                        patchResults.Add(new PatchHarvestResult(patch.PatchName, targetSet, 0, 0));
+                        continue;
+                    }
+
+                    totalMatchIds += matchIds.Count;
+
+                    var harvestedMatches = matchIds.Select(x => new MatchHarvestInfo(
+                        MatchId: x,
+                        GameCreation: 0,
+                        GameDateTime: null,
+                        SetNumber: targetSet,
+                        QueueId: null,
+                        PatchId: patch.Id
+                    )).ToList();
+
+                    var pendingBefore = await _harvestRepo.GetPendingMatchCountAsync();
+                    await _harvestRepo.UpsertMatchIdsAsync(puuid, harvestedMatches);
+                    var pendingAfter = await _harvestRepo.GetPendingMatchCountAsync();
+                    int newAdded = pendingAfter - pendingBefore;
+
+                    patchResults.Add(new PatchHarvestResult(patch.PatchName, targetSet, matchIds.Count, newAdded));
+
+                    _logger.LogDebug("[Harvester] Patch {patchName}: {found} match IDs found, {new} new added to staging",
+                        patch.PatchName, matchIds.Count, newAdded);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("[Harvester] Failed to harvest patch {patchName} for {puuid}: {exMessage}",
+                        patch.PatchName, puuid, ex.Message);
+                    return; // Don't mark player as harvested, retry next cycle
+                }
             }
 
-            _logger.LogInformation("[Harvester] Found {count} matches for {puuid}", matchIds.Count, puuid);
+            if (patchResults.Count > 0)
+            {
+                var summary = string.Join(" | ", patchResults.Select(p =>
+                    $"{p.PatchName}: {p.MatchIdsFound} found, {p.NewMatchIdsAdded} new"));
+                _logger.LogInformation("[Harvester] Player {puuid} harvest complete.\r\n" +
+                    "Total match IDs collected: {totalIds}\r\n" +
+                    "Per-patch breakdown: {summary}",
+                    puuid, totalMatchIds, summary);
+            }
 
-            var harvestedMatches = matchIds.Select(x => new MatchHarvestInfo(
-                MatchId: x,
-                GameCreation: 0,
-                GameDateTime: null,
-                SetNumber: targetSet,
-                QueueId: null
-            )).ToList();
-
-            await _harvestRepo.UpsertMatchIdsAsync(puuid, harvestedMatches);
             await _harvestRepo.MarkPlayerAsHarvestedAsync(puuid);
 
             var remaining = await _harvestRepo.GetRemainingPlayerCountAsync();
             var pendingCount = await _harvestRepo.GetPendingMatchCountAsync();
             double pct = _totalPlayers > 0 ? Math.Round((1.0 - (double)remaining / _totalPlayers) * 100, 5) : 0;
-            _logger.LogInformation("[Harvester] Player {puuid} finished.\r\nRemaining: {remaining} ({pct}%) | Pending matches: {pendingCount} (+ {newMatches})",
-                puuid, remaining, pct, pendingCount, harvestedMatches.Count);
+            _logger.LogInformation("[Harvester] Player {puuid} finalized.\r\n" +
+                "Remaining: {remaining} ({pct}%) | Pending matches: {pendingCount}",
+                puuid, remaining, pct, pendingCount);
         }
     }
 }
