@@ -33,8 +33,8 @@ namespace TFTStats.Tests.Presentation
             _matchRepoMock.Setup(x => x.FilterNewMatchIdsAsync(It.IsAny<List<string>>()))
                 .ReturnsAsync((List<string> ids) => ids);
 
-            // Default: GetPendingMatchCountAsync returns 0
-            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountAsync())
+            // Default: GetPendingMatchCountCachedAsync returns 0
+            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountCachedAsync())
                 .ReturnsAsync(0);
         }
 
@@ -100,7 +100,7 @@ namespace TFTStats.Tests.Presentation
             _matchServiceMock.Setup(x => x.GetMatch("europe", "match-2", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(CreateMatch("match-2", 1));
 
-            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountAsync()).ReturnsAsync(10);
+            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountCachedAsync()).ReturnsAsync(10);
 
             var cts = new CancellationTokenSource();
             _matchRepoMock.Setup(x => x.MarkMatchesAsCrawledAsync(matchIds))
@@ -130,7 +130,7 @@ namespace TFTStats.Tests.Presentation
             _matchServiceMock.Setup(x => x.GetMatch("europe", "match-missing", It.IsAny<CancellationToken>()))
                 .ReturnsAsync((RiotTFTMatch?)null);
 
-            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountAsync()).ReturnsAsync(0);
+            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountCachedAsync()).ReturnsAsync(0);
 
             var cts = new CancellationTokenSource();
             _matchRepoMock.Setup(x => x.MarkMatchesAsCrawledAsync(matchIds))
@@ -159,7 +159,7 @@ namespace TFTStats.Tests.Presentation
             _matchServiceMock.Setup(x => x.GetMatch("europe", "match-empty", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(CreateMatch("match-empty", 0));
 
-            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountAsync()).ReturnsAsync(0);
+            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountCachedAsync()).ReturnsAsync(0);
 
             var cts = new CancellationTokenSource();
             _matchRepoMock.Setup(x => x.MarkMatchesAsCrawledAsync(matchIds))
@@ -190,7 +190,7 @@ namespace TFTStats.Tests.Presentation
             _matchServiceMock.Setup(x => x.GetMatch("europe", "match-ok", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(CreateMatch("match-ok", 1));
 
-            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountAsync()).ReturnsAsync(5);
+            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountCachedAsync()).ReturnsAsync(5);
 
             var cts = new CancellationTokenSource();
             _matchRepoMock.Setup(x => x.MarkMatchesAsCrawledAsync(matchIds))
@@ -269,7 +269,7 @@ namespace TFTStats.Tests.Presentation
             _matchServiceMock.Setup(x => x.GetMatch("europe", "match-empty", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(CreateMatch("match-empty", 0));
 
-            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountAsync()).ReturnsAsync(3);
+            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountCachedAsync()).ReturnsAsync(3);
 
             var cts = new CancellationTokenSource();
             _matchRepoMock.Setup(x => x.MarkMatchesAsCrawledAsync(matchIds))
@@ -308,10 +308,8 @@ namespace TFTStats.Tests.Presentation
                 .ThrowsAsync(new Exception("Update failed"))
                 .Returns(Task.CompletedTask);
 
-            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountAsync()).ReturnsAsync(5);
-
             var cts = new CancellationTokenSource();
-            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountAsync())
+            _harvesterRepoMock.Setup(x => x.GetPendingMatchCountCachedAsync())
                 .Callback(() => cts.CancelAfter(50));
 
             // Act

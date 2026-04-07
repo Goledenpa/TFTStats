@@ -368,3 +368,4 @@ FodyWeavers.xsd
 /indexes.csv
 /QWEN.md
 /.qwen
+/TFTStats.Tests/appsettings.json

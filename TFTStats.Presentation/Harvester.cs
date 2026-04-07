@@ -140,15 +140,13 @@ namespace TFTStats.Presentation
                         PatchId: patch.Id
                     )).ToList();
 
-                    var pendingBefore = await _harvestRepo.GetPendingMatchCountAsync();
-                    await _harvestRepo.UpsertMatchIdsAsync(puuid, harvestedMatches);
-                    var pendingAfter = await _harvestRepo.GetPendingMatchCountAsync();
-                    int newAdded = pendingAfter - pendingBefore;
+                    int actuallyInserted = await _harvestRepo.UpsertMatchIdsAsync(puuid, harvestedMatches);
+                    await _harvestRepo.IncrementPendingCounterAsync(actuallyInserted);
 
-                    patchResults.Add(new PatchHarvestResult(patch.PatchName, targetSet, matchIds.Count, newAdded));
+                    patchResults.Add(new PatchHarvestResult(patch.PatchName, targetSet, matchIds.Count, actuallyInserted));
 
                     _logger.LogDebug("[Harvester] Patch {patchName}: {found} match IDs found, {new} new added to staging",
-                        patch.PatchName, matchIds.Count, newAdded);
+                        patch.PatchName, matchIds.Count, actuallyInserted);
                 }
                 catch (Exception ex)
                 {
@@ -171,7 +169,7 @@ namespace TFTStats.Presentation
             await _harvestRepo.MarkPlayerAsHarvestedAsync(puuid);
 
             var remaining = await _harvestRepo.GetRemainingPlayerCountAsync();
-            var pendingCount = await _harvestRepo.GetPendingMatchCountAsync();
+            var pendingCount = await _harvestRepo.GetPendingMatchCountCachedAsync();
             double pct = _totalPlayers > 0 ? Math.Round((1.0 - (double)remaining / _totalPlayers) * 100, 5) : 0;
             _logger.LogInformation("[Harvester] Player {puuid} finalized.\r\n" +
                 "Remaining: {remaining} ({pct}%) | Pending matches: {pendingCount}",

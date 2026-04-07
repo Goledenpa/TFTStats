@@ -19,14 +19,8 @@ namespace TFTStats.Presentation
         private readonly IRiotDataImporter _importer;
         private readonly ILogger<Crawler> _logger;
 
-        public Crawler(
-            RiotTFTMatchService matchService,
-            IMatchRepository matchRepo,
-            IHarvesterRepository harvesterRepo,
-            IRiotDataImporter importer,
-            ILogger<Crawler> logger,
-            int crawlerCheckDelayMs = 10000,
-            int errorRetryDelayMs = 5000)
+        public Crawler(RiotTFTMatchService matchService, IMatchRepository matchRepo, IHarvesterRepository harvesterRepo, 
+            IRiotDataImporter importer, ILogger<Crawler> logger, int crawlerCheckDelayMs = 10000, int errorRetryDelayMs = 5000)
         {
             _matchService = matchService;
             _matchRepo = matchRepo;
@@ -80,7 +74,7 @@ namespace TFTStats.Presentation
                     // Mark ALL pending IDs as crawled (including duplicates that were filtered)
                     await _matchRepo.MarkMatchesAsCrawledAsync(matchIds);
 
-                    var pendingCount = await _harvesterRepo.GetPendingMatchCountAsync();
+                    var pendingCount = await _harvesterRepo.GetPendingMatchCountCachedAsync();
                     _logger.LogInformation("[Crawler] Batch ingested ({count} matches). Pending matches: {pendingCount}", matches.Count, pendingCount);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)

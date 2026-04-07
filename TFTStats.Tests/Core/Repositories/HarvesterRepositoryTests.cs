@@ -54,14 +54,14 @@ namespace TFTStats.Tests.Core.Repositories
             // Arrange
             string? capturedSql = null;
             _sqlExecutorMock
-                .Setup(x => x.ExecuteAsync(
+                .Setup(x => x.QueryScalarAsync<long>(
                     It.IsAny<string>(),
                     It.IsAny<Action<DbParameterCollection>>()))
                 .Callback((string sql, Action<DbParameterCollection> _) =>
                 {
                     capturedSql = sql;
                 })
-                .ReturnsAsync(1);
+                .ReturnsAsync(2L);
 
             var matches = new List<MatchHarvestInfo>
             {
@@ -70,7 +70,7 @@ namespace TFTStats.Tests.Core.Repositories
             };
 
             // Act
-            await _repository.UpsertMatchIdsAsync("p1", matches);
+            var result = await _repository.UpsertMatchIdsAsync("p1", matches);
 
             // Assert
             Assert.NotNull(capturedSql);
@@ -79,6 +79,8 @@ namespace TFTStats.Tests.Core.Repositories
             Assert.Contains("unnest", capturedSql);
             Assert.Contains("ON CONFLICT", capturedSql);
             Assert.Contains("DO NOTHING", capturedSql);
+            Assert.Contains("RETURNING", capturedSql);
+            Assert.Equal(2, result);
         }
 
         [Fact]
@@ -88,12 +90,13 @@ namespace TFTStats.Tests.Core.Repositories
             var matches = new List<MatchHarvestInfo>();
 
             // Act
-            await _repository.UpsertMatchIdsAsync("p1", matches);
+            var result = await _repository.UpsertMatchIdsAsync("p1", matches);
 
-            // Assert - ExecuteAsync should never be called for empty lists
+            // Assert - no SQL executed for empty lists
             _sqlExecutorMock.Verify(
-                x => x.ExecuteAsync(It.IsAny<string>(), It.IsAny<Action<DbParameterCollection>>()),
+                x => x.QueryScalarAsync<long>(It.IsAny<string>(), It.IsAny<Action<DbParameterCollection>>()),
                 Times.Never);
+            Assert.Equal(0, result);
         }
 
         [Fact]

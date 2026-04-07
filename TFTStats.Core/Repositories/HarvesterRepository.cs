@@ -21,6 +21,7 @@ namespace TFTStats.Core.Repositories
             const string query = @"
                 SELECT puuid, last_harvested_at
                 FROM player
+                WHERE last_harvested_at IS NULL
                 ORDER BY last_harvested_at ASC NULLS FIRST
                 LIMIT 1";
 
@@ -43,11 +44,41 @@ namespace TFTStats.Core.Repositories
             return res is null ? 0 : Convert.ToInt32(res);
         }
 
+        public async Task<int> GetPendingMatchCountCachedAsync()
+        {
+            const string query = "SELECT value FROM app_settings WHERE key = 'staging_pending_count'";
+            var res = await _sqlExecutor.QueryScalarAsync<string>(query);
+            return res is not null ? int.Parse(res) : 0;
+        }
+
         public async Task<int> GetRemainingPlayerCountAsync()
         {
             const string query = "SELECT COUNT(*) FROM player WHERE last_harvested_at IS NULL";
             var res = await _sqlExecutor.QueryScalarAsync<object>(query);
             return res == null ? 0 : Convert.ToInt32(res);
+        }
+
+        public async Task IncrementPendingCounterAsync(int count)
+        {
+            const string query = "UPDATE app_settings SET value = (value::bigint + @count)::text WHERE key = 'staging_pending_count'";
+            await _sqlExecutor.ExecuteAsync(query, p =>
+            {
+                p.Add(_sqlExecutor.CreateParameter("count", count));
+            });
+        }
+
+        public async Task SyncPendingCounterAsync()
+        {
+            const string countQuery = "SELECT COUNT(*) FROM staging_match_ids WHERE crawled_at IS NULL";
+            const string updateQuery = "UPDATE app_settings SET value = @count WHERE key = 'staging_pending_count'";
+
+            var count = await _sqlExecutor.QueryScalarAsync<long>(countQuery);
+            await _sqlExecutor.ExecuteAsync(updateQuery, p =>
+            {
+                p.Add(_sqlExecutor.CreateParameter("count", count.ToString()));
+            });
+
+            _logger.LogInformation("[HarvesterRepository] Synced pending counter: {count}", count);
         }
 
         public async Task MarkPlayerAsHarvestedAsync(string puuid)
@@ -60,23 +91,27 @@ namespace TFTStats.Core.Repositories
             });
         }
 
-        public async Task UpsertMatchIdsAsync(string puuid, List<MatchHarvestInfo> matchIds)
+        public async Task<int> UpsertMatchIdsAsync(string puuid, List<MatchHarvestInfo> matchIds)
         {
-            if (matchIds.Count == 0) return;
+            if (matchIds.Count == 0) return 0;
 
             const string query = @"
-                INSERT INTO staging_match_ids(match_id, puuid, game_creation, game_datetime, set_number, queue_id, patch_id)
-                SELECT
-                    unnest(@matchIds::text[]),
-                    @puuid,
-                    unnest(@gameCreations::bigint[]),
-                    unnest(@gameDatetimes::timestamptz[]),
-                    unnest(@setNumbers::int[]),
-                    unnest(@queueIds::int[]),
-                    unnest(@patchIds::int[])
-                ON CONFLICT (match_id, puuid) DO NOTHING";
+                WITH new_matches AS (
+                    INSERT INTO staging_match_ids(match_id, puuid, game_creation, game_datetime, set_number, queue_id, patch_id)
+                    SELECT
+                        unnest(@matchIds::text[]),
+                        @puuid,
+                        unnest(@gameCreations::bigint[]),
+                        unnest(@gameDatetimes::timestamptz[]),
+                        unnest(@setNumbers::int[]),
+                        unnest(@queueIds::int[]),
+                        unnest(@patchIds::int[])
+                    ON CONFLICT (match_id, puuid) DO NOTHING
+                    RETURNING match_id
+                )
+                SELECT COUNT(*) FROM new_matches";
 
-            await _sqlExecutor.ExecuteAsync(query, p =>
+            var res = await _sqlExecutor.QueryScalarAsync<long>(query, p =>
             {
                 p.Add(_sqlExecutor.CreateParameter("matchIds", matchIds.Select(x => x.MatchId).ToArray()));
                 p.Add(_sqlExecutor.CreateParameter("puuid", puuid));
@@ -86,6 +121,8 @@ namespace TFTStats.Core.Repositories
                 p.Add(_sqlExecutor.CreateParameter("queueIds", matchIds.Select(x => x.QueueId).ToArray()));
                 p.Add(_sqlExecutor.CreateParameter("patchIds", matchIds.Select(x => x.PatchId).ToArray()));
             });
+
+            return (int)res;
         }
     }
 }

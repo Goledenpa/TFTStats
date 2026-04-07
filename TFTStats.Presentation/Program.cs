@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using TFTStats.Core.Base;
+using TFTStats.Core.Repositories.Interfaces;
 
 namespace TFTStats.Presentation
 {
@@ -53,6 +54,11 @@ namespace TFTStats.Presentation
                 var harvester = ActivatorUtilities.CreateInstance<Harvester>(
                     host.Services, 10000, 5000, true);
                 var crawler = host.Services.GetRequiredService<Crawler>();
+
+                // Sync the pending counter at startup (takes ~15s but only runs once)
+                var harvestRepo = host.Services.GetRequiredService<IHarvesterRepository>();
+                Log.Information("Syncing pending match counter...");
+                await harvestRepo.SyncPendingCounterAsync();
 
                 string cluster = "europe";
                 int setNumber = 16;
