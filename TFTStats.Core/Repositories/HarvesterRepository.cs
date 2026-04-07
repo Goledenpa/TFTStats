@@ -70,15 +70,37 @@ namespace TFTStats.Core.Repositories
         public async Task SyncPendingCounterAsync()
         {
             const string countQuery = "SELECT COUNT(*) FROM staging_match_ids WHERE crawled_at IS NULL";
+            const string getQuery = "SELECT value FROM app_settings WHERE key = 'staging_pending_count'";
             const string updateQuery = "UPDATE app_settings SET value = @count WHERE key = 'staging_pending_count'";
 
-            var count = await _sqlExecutor.QueryScalarAsync<long>(countQuery);
+            var oldValue = await _sqlExecutor.QueryScalarAsync<string>(getQuery);
+            var actualCount = await _sqlExecutor.QueryScalarAsync<long>(countQuery);
+
             await _sqlExecutor.ExecuteAsync(updateQuery, p =>
             {
-                p.Add(_sqlExecutor.CreateParameter("count", count.ToString()));
+                p.Add(_sqlExecutor.CreateParameter("count", actualCount.ToString()));
             });
 
-            _logger.LogInformation("[HarvesterRepository] Synced pending counter: {count}", count);
+            if (oldValue != null && long.TryParse(oldValue, out var oldCount))
+            {
+                var drift = actualCount - oldCount;
+                if (drift > 0)
+                {
+                    _logger.LogWarning("[HarvesterRepository] Pending counter drifted: was {oldCount}, actual {actualCount} (+{drift})", oldCount, actualCount, drift);
+                }
+                else if (drift < 0)
+                {
+                    _logger.LogWarning("[HarvesterRepository] Pending counter was OVER-counted: was {oldCount}, actual {actualCount} ({drift})", oldCount, actualCount, drift);
+                }
+                else
+                {
+                    _logger.LogInformation("[HarvesterRepository] Pending counter synced: {actualCount} (no drift)", actualCount);
+                }
+            }
+            else
+            {
+                _logger.LogInformation("[HarvesterRepository] Pending counter initialized: {actualCount}", actualCount);
+            }
         }
 
         public async Task MarkPlayerAsHarvestedAsync(string puuid)

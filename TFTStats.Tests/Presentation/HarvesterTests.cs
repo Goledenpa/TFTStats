@@ -76,7 +76,7 @@ namespace TFTStats.Tests.Presentation
             _harvestRepoMock.Setup(x => x.GetNextPlayerToHarvestAsync())
                 .ReturnsAsync(() => callSequence.Dequeue());
 
-            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", puuid, It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", puuid, It.IsAny<long>(), It.IsAny<long?>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<string> { "match-1", "match-2" });
 
             _harvestRepoMock.Setup(x => x.GetRemainingPlayerCountAsync())
@@ -111,7 +111,7 @@ namespace TFTStats.Tests.Presentation
             _harvestRepoMock.Setup(x => x.GetNextPlayerToHarvestAsync())
                 .ReturnsAsync(() => callSequence.Dequeue());
 
-            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", "p1", It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", "p1", It.IsAny<long>(), It.IsAny<long?>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<string>());
 
             var cts = new CancellationTokenSource();
@@ -144,7 +144,7 @@ namespace TFTStats.Tests.Presentation
                 .ReturnsAsync(() => callSequence.Dequeue())
                 .ReturnsAsync(() => callSequence.Dequeue());
 
-            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", "p1", It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", "p1", It.IsAny<long>(), It.IsAny<long?>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<string> { "m1" });
 
             var cts = new CancellationTokenSource();
@@ -171,7 +171,7 @@ namespace TFTStats.Tests.Presentation
             _harvestRepoMock.Setup(x => x.GetNextPlayerToHarvestAsync())
                 .ReturnsAsync(() => callSequence.Dequeue());
 
-            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", "p1", It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", "p1", It.IsAny<long>(), It.IsAny<long?>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<string> { "m1" });
 
             var cts = new CancellationTokenSource();
@@ -238,7 +238,7 @@ namespace TFTStats.Tests.Presentation
                 .ReturnsAsync(new PlayerHarvestInfo(puuid, null))
                 .ReturnsAsync(new PlayerHarvestInfo("", null));
 
-            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", puuid, It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", puuid, It.IsAny<long>(), It.IsAny<long?>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<string> { "m1" });
 
             // Upsert throws, so MarkPlayerAsHarvestedAsync should NOT be called
@@ -265,7 +265,7 @@ namespace TFTStats.Tests.Presentation
                 .ReturnsAsync(new PlayerHarvestInfo("", null));
 
             // API call throws
-            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", "p1", It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", "p1", It.IsAny<long>(), It.IsAny<long?>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception("Riot API timeout"));
 
             var cts = new CancellationTokenSource();
@@ -304,7 +304,7 @@ namespace TFTStats.Tests.Presentation
                 .ReturnsAsync(new PlayerHarvestInfo(puuid, null))
                 .ReturnsAsync(new PlayerHarvestInfo("", null));
 
-            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", puuid, It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            _matchServiceMock.Setup(x => x.GetSetMatchIdsAsync("europe", puuid, It.IsAny<long>(), It.IsAny<long?>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<string> { "m1" });
 
             // Act - should exit automatically after processing all players
