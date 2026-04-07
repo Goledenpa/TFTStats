@@ -117,10 +117,13 @@ namespace TFTStats.Presentation
                 if (ct.IsCancellationRequested) return;
 
                 var patchStartTime = ((DateTimeOffset)patch.StartDate).ToUnixTimeSeconds();
+                var patchEndTime = patch.EndDate.HasValue
+                    ? ((DateTimeOffset)patch.EndDate).ToUnixTimeSeconds()
+                    : DateTimeOffset.Now.ToUnixTimeSeconds();
 
                 try
                 {
-                    var matchIds = await _matchService.GetSetMatchIdsAsync(cluster, puuid, patchStartTime, ct);
+                    var matchIds = await _matchService.GetSetMatchIdsAsync(cluster, puuid, patchStartTime, patchEndTime, ct);
 
                     if (matchIds.Count == 0)
                     {

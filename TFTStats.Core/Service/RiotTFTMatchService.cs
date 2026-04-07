@@ -75,7 +75,7 @@ namespace TFTStats.Core.Service
                 }
             }
         }
-        public virtual async Task<List<string>> GetSetMatchIdsAsync(string cluster, string puuid, long setStartTime, CancellationToken ct = default)
+        public virtual async Task<List<string>> GetSetMatchIdsAsync(string cluster, string puuid, long setStartTime, long? setEndTime = null, CancellationToken ct = default)
         {
             var allIds = new List<string>();
             int startOffset = 0;
@@ -84,7 +84,7 @@ namespace TFTStats.Core.Service
             while (true)
             {
                 var url = _apiClient.BuildUrl(cluster,
-                    $"tft/match/v1/matches/by-puuid/{puuid}/ids?startTime={setStartTime}&start={startOffset}&count={pageSize}");
+                    $"tft/match/v1/matches/by-puuid/{puuid}/ids?startTime={setStartTime}&start={startOffset}&endTime={setEndTime}&count={pageSize}");
 
                 var ids = await _apiClient.Client.GetFromJsonAsync<List<string>>(url, ct);
 
