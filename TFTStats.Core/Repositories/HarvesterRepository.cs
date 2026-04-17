@@ -119,7 +119,7 @@ namespace TFTStats.Core.Repositories
 
             const string query = @"
                 WITH new_matches AS (
-                    INSERT INTO staging_match_ids(match_id, puuid, game_creation, game_datetime, set_number, queue_id, patch_id)
+                    INSERT INTO staging_match_ids(match_id, puuid, game_creation, game_datetime, set_number, queue_id, patch_id ,created_at)
                     SELECT
                         unnest(@matchIds::text[]),
                         @puuid,
@@ -127,7 +127,8 @@ namespace TFTStats.Core.Repositories
                         unnest(@gameDatetimes::timestamptz[]),
                         unnest(@setNumbers::int[]),
                         unnest(@queueIds::int[]),
-                        unnest(@patchIds::int[])
+                        unnest(@patchIds::int[]),
+                        @created_at
                     ON CONFLICT (match_id, puuid) DO NOTHING
                     RETURNING match_id
                 )
@@ -142,6 +143,7 @@ namespace TFTStats.Core.Repositories
                 p.Add(_sqlExecutor.CreateParameter("setNumbers", matchIds.Select(x => x.SetNumber).ToArray()));
                 p.Add(_sqlExecutor.CreateParameter("queueIds", matchIds.Select(x => x.QueueId).ToArray()));
                 p.Add(_sqlExecutor.CreateParameter("patchIds", matchIds.Select(x => x.PatchId).ToArray()));
+                p.Add(_sqlExecutor.CreateParameter("created_at", DateTime.UtcNow));
             });
 
             return (int)res;

@@ -27,7 +27,7 @@ namespace TFTStats.Core.Infrastructure.Importers
             _logger = logger;
         }
 
-        public async Task ImportMatchStreamAsync(IAsyncEnumerable<Match> matchStream, CancellationToken ct = default)
+        public async Task<List<string>> ImportMatchStreamAsync(IAsyncEnumerable<Match> matchStream, CancellationToken ct = default)
         {
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync(ct);
@@ -35,6 +35,7 @@ namespace TFTStats.Core.Infrastructure.Importers
             await InitializeCache(conn);
 
             var batch = new List<Match>();
+            var importedMatchIds = new List<string>();
             var enumerator = matchStream.GetAsyncEnumerator(ct);
 
             try
@@ -56,6 +57,7 @@ namespace TFTStats.Core.Infrastructure.Importers
                         if (batch.Count >= 100)
                         {
                             await ExecuteBinaryCopyBatch(conn, batch, ct);
+                            importedMatchIds.AddRange(batch.Select(m => m.MatchId));
                             batch.Clear();
                         }
                     }
@@ -67,6 +69,7 @@ namespace TFTStats.Core.Infrastructure.Importers
                         {
                             Console.WriteLine($"\n[System] Ingestion paused (API Cooldown). Flushing {batch.Count} matches to DB...");
                             await ExecuteBinaryCopyBatch(conn, batch, ct);
+                            importedMatchIds.AddRange(batch.Select(m => m.MatchId));
                             batch.Clear();
                         }
 
@@ -85,6 +88,7 @@ namespace TFTStats.Core.Infrastructure.Importers
                 if (batch.Count != 0 && !ct.IsCancellationRequested)
                 {
                     await ExecuteBinaryCopyBatch(conn, batch, CancellationToken.None);
+                    importedMatchIds.AddRange(batch.Select(m => m.MatchId));
                 }
                 try
                 {
@@ -92,6 +96,8 @@ namespace TFTStats.Core.Infrastructure.Importers
                 }
                 catch (NotSupportedException) { }
             }
+
+            return importedMatchIds;
         }
 
         private async Task InitializeCache(NpgsqlConnection conn)

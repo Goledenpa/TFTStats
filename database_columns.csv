@@ -1,0 +1,62 @@
+"table_name","column_name","data_type","is_nullable","column_default"
+"app_settings","key","character varying","NO",NULL
+"app_settings","value","text","YES",NULL
+"app_settings","last_updated_at","timestamp with time zone","YES","CURRENT_TIMESTAMP"
+"item_reference","id","integer","NO","nextval('item_reference_id_seq'::regclass)"
+"item_reference","name","character varying","YES",NULL
+"match","match_id","character varying","NO",NULL
+"match","game_creation","bigint","YES",NULL
+"match","game_datetime","timestamp with time zone","YES",NULL
+"match","game_length","double precision","YES",NULL
+"match","game_version","character varying","YES",NULL
+"match","set_number","integer","YES",NULL
+"match","queue_id","integer","YES",NULL
+"participant","id","character varying","NO",NULL
+"participant","match_id","character varying","YES",NULL
+"participant","puuid","character varying","YES",NULL
+"participant","placement","integer","YES",NULL
+"participant","level","integer","YES",NULL
+"participant","gold_left","integer","YES",NULL
+"participant","last_round","integer","YES",NULL
+"participant","time_eliminated","double precision","YES",NULL
+"participant","players_eliminated","integer","YES",NULL
+"participant","total_damage_to_players","integer","YES",NULL
+"participant","companion_species","character varying","YES",NULL
+"participant","companion_skin_id","integer","YES",NULL
+"participant_trait","participant_id","character varying","NO",NULL
+"participant_trait","trait_ref_id","integer","NO",NULL
+"participant_trait","num_units","smallint","NO",NULL
+"participant_trait","tier_current","smallint","NO",NULL
+"participant_trait","tier_total","smallint","NO",NULL
+"participant_unit","id","integer","NO","nextval('participant_unit_id_seq'::regclass)"
+"participant_unit","participant_id","character varying","YES",NULL
+"participant_unit","unit_ref_id","integer","YES",NULL
+"participant_unit","item_ids","ARRAY","YES","'{}'::integer[]"
+"player","puuid","character varying","NO",NULL
+"player","game_name","character varying","YES",NULL
+"player","tagline","character varying","YES",NULL
+"player","last_crawled_at","timestamp without time zone","YES",NULL
+"player","last_harvested_at","timestamp with time zone","YES",NULL
+"staging_match_ids","match_id","character varying","NO",NULL
+"staging_match_ids","puuid","character varying","NO",NULL
+"staging_match_ids","game_creation","bigint","NO",NULL
+"staging_match_ids","game_datetime","timestamp with time zone","YES",NULL
+"staging_match_ids","set_number","integer","YES",NULL
+"staging_match_ids","queue_id","integer","YES",NULL
+"staging_match_ids","crawled_at","timestamp with time zone","YES",NULL
+"staging_match_ids","created_at","timestamp with time zone","YES",NULL
+"staging_match_ids","patch_id","integer","YES",NULL
+"staging_player","puuid","character varying","NO",NULL
+"staging_player","game_name","character varying","YES",NULL
+"staging_player","tagline","character varying","YES",NULL
+"tft_patch","id","integer","NO","nextval('tft_patch_id_seq'::regclass)"
+"tft_patch","set_number","integer","NO",NULL
+"tft_patch","patch_name","character varying","NO",NULL
+"tft_patch","start_date","timestamp with time zone","NO",NULL
+"tft_patch","end_date","timestamp with time zone","YES",NULL
+"trait_reference","id","integer","NO","nextval('trait_reference_id_seq'::regclass)"
+"trait_reference","name","character varying","YES",NULL
+"unit_reference","id","integer","NO","nextval('unit_reference_id_seq'::regclass)"
+"unit_reference","character_id","character varying","YES",NULL
+"unit_reference","tier","integer","YES",NULL
+"unit_reference","rarity","integer","YES",NULL

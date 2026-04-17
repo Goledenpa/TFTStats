@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Npgsql;
 using TFTStats.Core.Infrastructure;
 using TFTStats.Core.Repositories.Interfaces;
 
@@ -96,6 +97,21 @@ namespace TFTStats.Core.Repositories
             {
                 p.Add(_sqlExecutor.CreateParameter("ids", matchIds.ToArray()));
             });
+        }
+
+        public async Task MarkMatchesAsCrawledAsync(NpgsqlCommand cmd, List<string> matchIds)
+        {
+            if (matchIds.Count == 0) return;
+
+            cmd.CommandText = @"
+                UPDATE staging_match_ids 
+                SET crawled_at = CURRENT_TIMESTAMP 
+                WHERE match_id = ANY(@ids::text[])";
+
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("ids", matchIds.ToArray());
+
+            await cmd.ExecuteNonQueryAsync();
         }
     }
 }

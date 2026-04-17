@@ -4,6 +4,10 @@ namespace TFTStats.Core.Infrastructure.Importers.Interfaces
 {
     public interface IRiotDataImporter
     {
-        Task ImportMatchStreamAsync(IAsyncEnumerable<Match> matchStream, CancellationToken ct = default);
+        /// <summary>
+        /// Imports matches from the stream into the database within a transaction.
+        /// Returns the list of match IDs that were successfully imported.
+        /// </summary>
+        Task<List<string>> ImportMatchStreamAsync(IAsyncEnumerable<Match> matchStream, CancellationToken ct = default);
     }
 }

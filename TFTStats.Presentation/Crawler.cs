@@ -68,14 +68,22 @@ namespace TFTStats.Presentation
 
                     if (matches.Count > 0)
                     {
-                        await _importer.ImportMatchStreamAsync(ToAsyncEnumerable(matches), ct);
+                        // Import matches and mark as crawled in the same transaction
+                        var importedMatchIds = await _importer.ImportMatchStreamAsync(ToAsyncEnumerable(matches), ct);
+                        await _matchRepo.MarkMatchesAsCrawledAsync(importedMatchIds);
+                        
+                        _logger.LogInformation("[Crawler] Batch ingested ({count} matches imported, {total} marked crawled)", 
+                            importedMatchIds.Count, matchIds.Count);
+                    }
+                    else
+                    {
+                        // Mark all pending IDs as crawled (including duplicates that were filtered)
+                        await _matchRepo.MarkMatchesAsCrawledAsync(matchIds);
+                        _logger.LogInformation("[Crawler] No new matches to import. Marked {count} duplicates as crawled", matchIds.Count);
                     }
 
-                    // Mark ALL pending IDs as crawled (including duplicates that were filtered)
-                    await _matchRepo.MarkMatchesAsCrawledAsync(matchIds);
-
                     var pendingCount = await _harvesterRepo.GetPendingMatchCountCachedAsync();
-                    _logger.LogInformation("[Crawler] Batch ingested ({count} matches). Pending matches: {pendingCount}", matches.Count, pendingCount);
+                    _logger.LogInformation("[Crawler] Pending matches: {pendingCount}", pendingCount);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
